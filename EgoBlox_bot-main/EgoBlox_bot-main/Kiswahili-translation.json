@@ -1,0 +1,7 @@
+{
+  "welcome": "Karibu kwenye Egoblox!",
+  "language_prompt": "Tafadhali chagua lugha yako.",
+  "language_changed": "Lugha yako imebadilishwa kuwa Kiswahili.",
+  "help_text": "Unaweza kutumia amri zifuatazo: /start, /help, /language.",
+  "error_message": "Kumekuwa na hitilafu. Tafadhali jaribu tena."
+}
