@@ -1,0 +1,95 @@
+import TelegramBot from 'node-telegram-bot-api';
+import * as i18next from 'i18next';
+import Backend from 'i18next-fs-backend';
+
+// Initialize i18next
+i18next
+  .use(Backend)
+  .init({
+    fallbackLng: 'en', // Default language
+    backend: {
+      loadPath: './locales/{{lng}}/translation.json', // Path to translation files
+    },
+    interpolation: {
+      escapeValue: false, // Disable escaping for translations
+    },
+  });
+
+// Initialize the Telegram bot
+const bot = new TelegramBot('YOUR_BOT_TOKEN_HERE', { polling: true });
+
+// Persistent user language preferences (e.g., a simple in-memory database)
+const userLanguages: Record<number, string> = {};
+
+// Function to set and persist user language
+const setUserLanguage = async (chatId: number, lang: string) => {
+  userLanguages[chatId] = lang;
+  await i18next.changeLanguage(lang);
+};
+
+// Function to get the user's preferred language
+const getUserLanguage = (chatId: number): string => {
+  return userLanguages[chatId] || 'en'; // Default to English if not set
+};
+
+// Handle language selection
+bot.onText(/\/language/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Send a language selection menu
+  bot.sendMessage(chatId, i18next.t('language_prompt', { lng: getUserLanguage(chatId) }), {
+    reply_markup: {
+      inline_keyboard: [
+        [
+          { text: 'English', callback_data: 'en' },
+          { text: 'Français', callback_data: 'fr' },
+        ],
+        [
+          { text: 'Kiswahili', callback_data: 'sw' },
+          { text: 'Yoruba', callback_data: 'yo' },
+        ],
+        [
+          { text: 'Igbo', callback_data: 'ig' },
+          { text: 'Hausa', callback_data: 'ha' },
+        ],
+      ],
+    },
+  });
+});
+
+// Handle language change callback
+bot.on('callback_query', async (query) => {
+  const chatId = query.message?.chat.id;
+  const selectedLang = query.data;
+
+  if (chatId && selectedLang) {
+    // Set the user's language
+    await setUserLanguage(chatId, selectedLang);
+
+    // Respond with confirmation in the selected language
+    bot.sendMessage(chatId, i18next.t('language_changed', { lng: selectedLang }));
+  }
+
+  // Answer the callback query to remove the loading state
+  bot.answerCallbackQuery(query.id);
+});
+
+// Handle user interactions (e.g., /start command)
+bot.onText(/\/start/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Get user's preferred language
+  const userLang = getUserLanguage(chatId);
+
+  // Send a welcome message in the user's language
+  bot.sendMessage(chatId, i18next.t('welcome', { lng: userLang }));
+});
+
+// Additional commands or interactions can also use the selected language
+bot.onText(/\/help/, async (msg) => {
+  const chatId = msg.chat.id;
+
+  // Use the user's preferred language for help messages
+  const userLang = getUserLanguage(chatId);
+  bot.sendMessage(chatId, i18next.t('help_text', { lng: userLang }));
+});
